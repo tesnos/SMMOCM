@@ -12,6 +12,17 @@ downloadcoursename = nil
 downloadcoursepath = nil
 idlistpath = "/SMMOCM/idlist.txt"
 
+function update_console(message, console)
+	Screen.waitVblankStart()
+	Screen.refresh()
+	Screen.clear(BOTTOM_SCREEN)
+	Screen.clear(TOP_SCREEN)
+	Console.append(console, message)
+	Console.show(tconsole)
+	Console.show(bconsole)
+	Screen.flip()
+end
+
 -- this function is code "borrowed" from stackoverflow :P
 
 function tablelength(T)
@@ -110,6 +121,9 @@ function file_select(extdata, toptext)
 end
 
 if System.doesFileExist("/SMMOCM/config.txt") then
+	configfile = io.open("/SMMOCM/config.txt", FREAD)
+	configip = io.read(configfile, 8, io.size(configfile))
+	io.close(configfile)
 	menu = 0
 end
 
@@ -122,20 +136,14 @@ if System.doesFileExist("/SMMOCM/config.txt") == false then
 		io.write(configfile, lockidcharnum-16, io.read(lockidfile, lockidcharnum, 1), 1)
 		lockidcharnum = lockidcharnum + 1
 	end
+	Console.clear(tconsole)
+	Console.clear(bconsole)
+	update_console("Enter the IP address of your server:", tconsole)
+	configip = System.startKeyboard()
+	io.write(configfile, 8, configip, #configip + 8)
 	io.close(lockidfile)
 	io.close(configfile)
 	menu = 0
-end
-
-function update_console(message, console)
-	Screen.waitVblankStart()
-	Screen.refresh()
-	Screen.clear(BOTTOM_SCREEN)
-	Screen.clear(TOP_SCREEN)
-	Console.append(console, message)
-	Console.show(tconsole)
-	Console.show(bconsole)
-	Screen.flip()
 end
 
 function stringtotable(input, hex)
@@ -354,7 +362,7 @@ while true do
 				totallen = totallen + string.len(tts)
 				update_console(".", tconsole)
 				emailcounter = emailcounter + lengthseg + 1
-				Network.requestString("http://your-server-ip-here/data_receive.php?n=" .. uploadcoursename .. idpartrandom .. "&d=" .. tts)
+				Network.requestString("http://" .. configip .. "/" .. "data_receive.php?n=" .. uploadcoursename .. idpartrandom .. "&d=" .. tts)
 				emailcounter2 = emailcounter2 + 1
 				update_console(".", tconsole)
 			end
@@ -364,7 +372,7 @@ while true do
 				-- tts = table.concat(comprezed, ",", nodifftotal, nodifftotal + diff)
 				tts = string.sub(leveldata, emailcounter, #leveldata)
 				totallen = totallen + string.len(tts)
-				Network.requestString("http://your-server-ip-here/data_receive.php?n=" .. uploadcoursename .. idpartrandom .. "&d=" .. tts)
+				Network.requestString("http://" .. configip .. "/" .. "data_receive.php?n=" .. uploadcoursename .. idpartrandom .. "&d=" .. tts)
 				update_console(";", tconsole)
 			end
 			update_console("Done", tconsole)
@@ -470,11 +478,11 @@ while true do
 	
 	if menu == 12 then
 		update_console("\nVerifying course ID...", tconsole)
-		idlist = Network.requestString("http://your-server-ip-here/id_list.php")
+		idlist = Network.requestString("http://" .. configip .. "/" .. "id_list.php")
 		update_console("\n" .. idlist, tconsole)
 		if string.find(idlist, downloadcoursename) ~= nil then
 			update_console("\nCourse ID verified.\nDownloading...", tconsole)
-			coursedownload = Network.downloadFile("http://your-server-ip-here/" .. downloadcoursename, "/SMMOCM/coursedownload")
+			coursedownload = Network.downloadFile("http://" .. configip .. "/" .. downloadcoursename, "/SMMOCM/coursedownload")
 			update_console("\nCourse Downloaded!\nInjecting LockoutID...", tconsole)
 			newlevel = io.open("/SMMOCM/coursedownload", FREAD)
 			configfile = io.open("/SMMOCM/config.txt", FCREATE)
