@@ -1,8 +1,13 @@
+--assigning variables for the top & bottom consoles
 bconsole = Console.new(BOTTOM_SCREEN)
 tconsole = Console.new(TOP_SCREEN)
+--setting menu to negative before configuration file is setup
 menu = -1
+--controldelay makes it so you won't zoom through the menus
 controldelay = 0
+--I honestly have no idea what this does
 configtimer = 0
+--setting all these values to empty in preparation for when they will be used
 uploadcoursefile = nil
 uploadcoursename = nil
 uploadcoursepath = nil
@@ -10,8 +15,12 @@ named = nil
 pathed = nil
 downloadcoursename = nil
 downloadcoursepath = nil
+--shortcut to where the idlist should be located
 idlistpath = "/SMMOCM/idlist.txt"
+--Initializing the socket system
+Socket.init()
 
+--function that updates the console (top or bottom) in one line rather than 8
 function update_console(message, console)
 	Screen.waitVblankStart()
 	Screen.refresh()
@@ -23,7 +32,7 @@ function update_console(message, console)
 	Screen.flip()
 end
 
--- this function is code "borrowed" from stackoverflow :P
+-- this function is code "borrowed" from stackoverflow cuz i'm lazy :P
 
 function tablelength(T)
   local count = 0
@@ -31,8 +40,11 @@ function tablelength(T)
   return count
 end
 
+--Creating a dictionary for all of the numbers and the hex values that represent them
 hexdict = {[0]='0', [1]='1', [2]='2', [3]='3', [4]='4', [5]='5', [6]='6', [7]='7', [8]='8', [9]='9', [10]='A', [11]='B', [12]='C', [13]='D', [14]='E', [15]='F'}
 
+--Pretty obvious what this does, it converts all characters of a string to their hex values
+--the downfall is it also doubles the size
 function string.tohex(str)
     return (str:gsub('.', function (c)
 		m = string.byte(c) // 16
@@ -43,13 +55,18 @@ function string.tohex(str)
 end
 
 -- this is from https://gist.github.com/yi/01e3ab762838d567e65d
-
+-- no idea why I didn't do it myself
 function string.fromhex(str)
     return (str:gsub('..', function (cc)
         return string.char(tonumber(cc, 16))
     end))
 end
 
+--selecting a file from the sd card or extdata
+--if you set extdata to nil it will pull from sd card,
+--otherwise it will pull from extdata
+--it also simultaneously displays the "toptext" variable
+--on the top screen
 function file_select(extdata, toptext)
 	Console.clear(tconsole)
 	Console.clear(bconsole)
@@ -120,32 +137,46 @@ function file_select(extdata, toptext)
 	return resultfile
 end
 
+--Checking for config file, this is what happens if it exists
 if System.doesFileExist("/SMMOCM/config.txt") then
 	configfile = io.open("/SMMOCM/config.txt", FREAD)
+	--get the server ip from the config file
 	configip = io.read(configfile, 8, io.size(configfile))
 	io.close(configfile)
+	--getting ready for main menu
 	menu = 0
 end
 
+--Checking for config file, this is what happens if it doesn't exist
 if System.doesFileExist("/SMMOCM/config.txt") == false then
+	--getting a course file so we can extract the LockoutID
 	lockidfile = io.open(file_select(true, "Config file does not exist, creating one\nPlease choose a course that youve created"), FREAD, 6660)
+	--creating the config file
 	configfile = io.open("/SMMOCM/config.txt", FCREATE)
+	--I know I could have used 2 variables, but I used one for some reason to make it harder on myself
 	lockidcharnum = 16
-	progress = 0
+	--iterating over 0x10 to 0x17 to get the LockoutID, and writing it to the config file
 	while lockidcharnum < 24 do
 		io.write(configfile, lockidcharnum-16, io.read(lockidfile, lockidcharnum, 1), 1)
 		lockidcharnum = lockidcharnum + 1
 	end
+	--clearing the consoles for server ip entry
 	Console.clear(tconsole)
 	Console.clear(bconsole)
 	update_console("Enter the IP address of your server:", tconsole)
+	--getting the server ip from the user
 	configip = System.startKeyboard()
+	--writing the ip the config file
 	io.write(configfile, 8, configip, #configip + 8)
+	--clean up
 	io.close(lockidfile)
 	io.close(configfile)
+	--getting ready for main menu
 	menu = 0
 end
 
+--function name. takes a string and makes it into a table(array, whatever. get your data structures together lua.)
+--if hex is not nil then convert it the string into hex as well as making it into a table
 function stringtotable(input, hex)
 	local output = {}
 	local splitticker = 1
@@ -160,6 +191,8 @@ function stringtotable(input, hex)
 	return output
 end
 
+--iterates through "intable" looking for "value" in either the key or value.if "returnindex" is not nil,
+--then return the index of where it was found as well
 function checkforval(intable, value, returnindex)
 	contains = false
 	for k,v in pairs(intable) do
@@ -185,6 +218,19 @@ function checkforval(intable, value, returnindex)
 	end
 end
 
+function post(path, data)
+	--Creating socket
+	socket_client = Socket.connect(configip, 80)
+	--POST headers
+	Socket.send(socket_client, "POST /" .. path .. "HTTP/1.0\r\n")
+	--POST data
+	Socket.send(socket_client, data)
+	--Closing socket
+	Socket.close(socket_client)
+end
+
+--stole this bit from luausers, you can google it
+
 function range(a, b, step)
   if not b then
     b = a
@@ -206,6 +252,12 @@ function range(a, b, step)
   return f, nil, a - step
 end
 
+--There was an original plan to compress the data before sending
+--It failed.  If you want to get this to work, it's on Rosettacode,
+--but I couldn't get their version to work properly so I had to rewrite-ish it
+--I probably made a stupid mistake somewhere and it will work easily if someone
+--else tries to implement it 
+
 function compress(input)
 	compoutput = {}
 	local dict = {}
@@ -225,7 +277,6 @@ function compress(input)
 		if dict[wc] then
             w = wc
         else
-			--update_console("\nInserted: " .. w, tconsole)
             table.insert(compoutput, dict[w])
             dict[wc] = dict_size
             dict_size = dict_size + 1
@@ -240,15 +291,23 @@ function compress(input)
 	return compoutput
 end
 
-while true do
+--Main loop
 
+while true do
+	--Screen initialization
 	Screen.waitVblankStart()
 	Screen.refresh()
 	Screen.clear(BOTTOM_SCREEN)
 	Screen.clear(TOP_SCREEN)
 	
+	--Reading user input
 	input = Controls.read()
 	
+	--Each menu has a value, different actions result in changing the menu value
+	--Menus:
+	--Main menu:0, Submit:1, Submit(part 2):2, Submit(part 3):3, Submit(success):4,
+	--Submit(you haven't beat the level):5, Browse(not implemented):6, Will be used for brose:
+	--7/8/9/10, Download:11, Download(part 2):12, Download(success):13
 	if menu == 0 then	
 		Console.append(tconsole, "Welcome to SuperMarioMakerOnline\nCourseManager(SMMOCM)")
 		Console.append(bconsole, "Please select an option:")
@@ -271,6 +330,7 @@ while true do
 			controldelay = 15
 		end
 		if (Controls.check(input,KEY_X)) and controldelay == 0 then
+			Socket.term()
 			System.exit()
 		end
 	end
@@ -477,26 +537,45 @@ while true do
 	end
 	
 	if menu == 12 then
+		--This is part 2 of downloading a course. Probably the ugliest code in the file
 		update_console("\nVerifying course ID...", tconsole)
+		--Gets list of valid ids from the server
 		idlist = Network.requestString("http://" .. configip .. "/" .. "id_list.php")
-		update_console("\n" .. idlist, tconsole)
+		--looks for the entered id in the valid id list
 		if string.find(idlist, downloadcoursename) ~= nil then
+			--If the id is valid, continue downloading
 			update_console("\nCourse ID verified.\nDownloading...", tconsole)
+			--get the file from the server
 			coursedownload = Network.downloadFile("http://" .. configip .. "/" .. downloadcoursename, "/SMMOCM/coursedownload")
 			update_console("\nCourse Downloaded!\nInjecting LockoutID...", tconsole)
+			--open the required files
 			newlevel = io.open("/SMMOCM/coursedownload", FREAD)
 			configfile = io.open("/SMMOCM/config.txt", FCREATE)
+			--read the data from the downloaded file
 			newleveldata = io.read(newlevel, 0, io.size(newlevel))
+			--read the LockoutID from the config file so the course will work
 			configdata = io.read(configfile, 0, io.size(configfile))
+			--closing the files, we just needed a little data
 			io.close(newlevel)
 			io.close(configfile)
+			--getting the data up to the LockoutID, injecting the user's LockoutID, getting the data
+			--up to where whether the course has been cleared is stored and then setting that to false
+			--and getting the remaining data
 			newleveldata = string.sub(newleveldata, 0, 16) .. configdata .. string.sub(newleveldata, 25, 279) .. string.char(00) .. string.sub(newleveldata, 280, #newleveldata)
 			update_console("\nInjecting Course...", tconsole)
+			--opening the course file to inject the new course into
 			downloadcoursefile = io.open(downloadcoursepath, FWRITE, 6660)
+			--writing the new course data
 			io.write(downloadcoursefile, 0, newleveldata, #newleveldata)
+			--cleaning up and moving to the success screen
 			io.close(downloadcoursefile, true)
 			menu = 13
 		else
+			--If the id is invalid, tell the user and make them L+R+DPAD_DOWN+B
+			--Sorry.
+			--(sorry to those ppl who don't know the L+R+DPAD_DOWN+B trick, it's super 
+			--useful so you don't have to reboot when homebrew apps freeze or crash as they often do.)
+			
 			update_console("\nInvalid course ID!", tconsole)
 			while true do
 			end
@@ -504,12 +583,14 @@ while true do
 	end
 	
 	if menu == 13 then
+		--When a course has been successfully downloaded this screen appears
 		Console.clear(tconsole)
 		Console.clear(bconsole)
 		update_console(tconsole, "The course has been downloaded!")
 		update_console(tconsole, "\nHave fun!")
 		Console.append(tconsole, "\n(Press A to return)")
 		if (Controls.check(input,KEY_A)) and controldelay == 0 then
+			--cleaning up
 			downloadcoursefile = nil
 			downloadcoursename = nil
 			downloadcoursepath = nil
@@ -526,12 +607,14 @@ while true do
 		Console.show(tconsole)
 	end
 	
+	--flushing all changes to the screen
 	Screen.flip()
 	
+	--clearing the consoles
 	Console.clear(bconsole)
 	Console.clear(tconsole)
+	--decreasing the controldelay so you can input stuff again
 	if controldelay > 0 then
 		controldelay = controldelay - 1
 	end
-	
 end
