@@ -26,7 +26,11 @@ function update_console(message, console)
 	Screen.refresh()
 	Screen.clear(BOTTOM_SCREEN)
 	Screen.clear(TOP_SCREEN)
-	Console.append(console, message)
+	if message then
+		Console.append(console, message)
+	else
+		Console.append(console, "nil")
+	end
 	Console.show(tconsole)
 	Console.show(bconsole)
 	Screen.flip()
@@ -218,15 +222,22 @@ function checkforval(intable, value, returnindex)
 	end
 end
 
+--Sends a POST request. GET has a limit on data so POST is better.
+--I guess this could have been one line?
 function post(path, data)
 	--Creating socket
-	socket_client = Socket.connect(configip, 80)
-	--POST headers
-	Socket.send(socket_client, "POST /" .. path .. "HTTP/1.0\r\n")
-	--POST data
-	Socket.send(socket_client, data)
+	socket_client_id = nil
+	while socket_client_id == nil do
+		socket_client_id = Socket.connect(configip, 80)
+	end
+	--POST
+	Socket.send(socket_client_id, "POST /" .. path .. " HTTP/1.0\r\n")
+	Socket.send(socket_client_id, "Content-Length: " .. #data .. "\r\n")
+	Socket.send(socket_client_id, "Content-Type: application/x-www-form-urlencoded\r\n")
+	Socket.send(socket_client_id, "\r\n")
+	Socket.send(socket_client_id, data)
 	--Closing socket
-	Socket.close(socket_client)
+	Socket.close(socket_client_id)
 end
 
 --stole this bit from luausers, you can google it
@@ -412,29 +423,30 @@ while true do
 			Console.clear(bconsole)
 		else
 			update_console("Done", tconsole)
-			lengthseg = length // 100
-			lengthseg = lengthseg - 1
+			-- lengthseg = length // 100
+			-- lengthseg = lengthseg - 1
 			update_console("\nUploading", tconsole)
-			while emailcounter2 <= 100 do
+			-- while emailcounter2 <= 100 do
 				-- Part of the compression plan
 				-- tts = table.concat(comprezed, ",", emailcounter, emailcounter + lengthseg)
-				tts = string.sub(leveldata, emailcounter, emailcounter + lengthseg)
-				totallen = totallen + string.len(tts)
-				update_console(".", tconsole)
-				emailcounter = emailcounter + lengthseg + 1
-				Network.requestString("http://" .. configip .. "/" .. "data_receive.php?n=" .. uploadcoursename .. idpartrandom .. "&d=" .. tts)
-				emailcounter2 = emailcounter2 + 1
-				update_console(".", tconsole)
-			end
-			diff = #leveldata - lengthseg * 100
-			if diff > 0 then
+				-- tts = string.sub(leveldata, emailcounter, emailcounter + lengthseg)
+				-- totallen = totallen + string.len(tts)
+				-- update_console(".", tconsole)
+				-- emailcounter = emailcounter + lengthseg + 1
+				-- Network.requestString("http://" .. configip .. "/" .. "data_receive.php?n=" .. uploadcoursename .. idpartrandom .. "&d=" .. tts)
+				-- emailcounter2 = emailcounter2 + 1
+				-- update_console(".", tconsole)
+			-- end
+			-- diff = #leveldata - lengthseg * 100
+			-- if diff > 0 then
 				-- Part of the compression plan
 				-- tts = table.concat(comprezed, ",", nodifftotal, nodifftotal + diff)
-				tts = string.sub(leveldata, emailcounter, #leveldata)
-				totallen = totallen + string.len(tts)
-				Network.requestString("http://" .. configip .. "/" .. "data_receive.php?n=" .. uploadcoursename .. idpartrandom .. "&d=" .. tts)
-				update_console(";", tconsole)
-			end
+				-- tts = string.sub(leveldata, emailcounter, #leveldata)
+				-- totallen = totallen + string.len(tts)
+				-- Network.requestString("http://" .. configip .. "/" .. "data_receive.php?n=" .. uploadcoursename .. idpartrandom .. "&d=" .. tts)
+				-- update_console(";", tconsole)
+			-- end
+			post("data_receive.php", "n=" .. uploadcoursename .. idpartrandom .. "&d=" .. leveldata)
 			update_console("Done", tconsole)
 			menu = 4
 			Console.show(tconsole)
