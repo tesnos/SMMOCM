@@ -10,6 +10,7 @@
 * The file is downloaded to a temporary file on the SD card for reading and then is read, translated out of hex, the downloading user's LockoutID is injected, and the data is written to the course file in extdata that the user selected.
 * Automatically generates a configuration file on first run that obtains the user's LockoutID and asks for the server IP  
 * A decent GUI
+* The gui layout is in JSON so it's easy to create custom themes and such
   
 ####Planned Features:
 * PHP scripts that aren't a hacker's friend (maybe)  
@@ -30,3 +31,7 @@ If you want to look at the source code, it's in Lua so have fun.  It's in the "s
 * Rinnegatamante for [Lua Player Plus](https://github.com/Rinnegatamante/lpp-3ds)
 * Marc Robledo for [SMDH Creator](http://usuaris.tinet.cat/mark/smdh_creator/)
 * BrokenR3C0RD#7695 & jaku#5640 on discord for criticising my code and helping me understand POST
+* Jeffrey Friedl for [JSON Encode/Decode in Pure LUA](http://regex.info/blog/lua/json), licensed under the [Creative Commons Attribution 3.0 Unported License](https://creativecommons.org/licenses/by/3.0/legalcode)
+
+##License:
+You may do pretty much whatever you want with this software, as long the actions you intend to perform are without malicious intent.  In addition, any actions you perform using this software are not the liability of the software's creators and/or contributors, they and their results are the full responsibility of you, the user
