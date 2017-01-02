@@ -41,7 +41,9 @@
 #include "include/graphics/Graphics.h"
 #include "include/ftp/ftp.h"
 #include "include/khax/khax.h"
-#include "include/khax/libSu.h"
+extern "C"{
+	#include "include/khax/svchax.h"
+}
 #include "include/audio.h"
 
 const char *errMsg;
@@ -63,7 +65,8 @@ int main(int argc, char **argv)
 	gfxInitDefault();
 	acInit();
 	cfguInit();
-	httpcInit();
+	sslcInit(0);
+	httpcInit(0x1000);
 	ptmuInit();
 	hidInit();
 	fsInit();
@@ -95,10 +98,7 @@ int main(int argc, char **argv)
 			isNinjhax2 = true;
 			#ifdef USE_MEMCHUNKHAX2
 				u32 fw_id = osGetKernelVersion();
-				u32 major = GET_VERSION_MAJOR(fw_id);
-				u32 minor = GET_VERSION_MINOR(fw_id);
-				u32 rev = GET_VERSION_REVISION(fw_id);
-				if (major <= 2 && minor <= 50 && rev < 11) suInit();
+				if (fw_id >= SYSTEM_VERSION(2,48,3) && fw_id <= SYSTEM_VERSION(2,50,11)) svchax_init(true);
 			#endif
 		}
 	}
@@ -108,15 +108,15 @@ int main(int argc, char **argv)
 		if (csndInit() == 0){
 			csndAccess = true;
 			csndExit();
-		}else csndAccess = false;
+		}
 	#endif
 	
 	// Init Audio-Device
 	int i = 0;
 	for (i=0;i < 32; i++){
-		audioChannels[i] = false;
-		if (!isNinjhax2 && (i < 0x08))  audioChannels[i] = true;
-		else if (csndAccess && (i < 0x08)) audioChannels[i] = true;
+		if (csndAccess && (i < 0x08)) audioChannels[i] = true;
+		else if ((!csndAccess) && i >= 24) audioChannels[i] = true;
+		else audioChannels[i] = false;
 	}
 	
 	// Set main script
@@ -136,7 +136,7 @@ int main(int argc, char **argv)
 	}else{
 		strcpy(start_dir,"/");
 		strcpy(cur_dir,"/"); // Set current dir for CFW Mode
-		strcat(path,"/SMMOCM.lua"); // Citra3DS compatibility
+		strcat(path,"/SMMOCM.lua");
 	}
 	
 	while(aptMainLoop())
@@ -147,7 +147,7 @@ int main(int argc, char **argv)
 		
 		// Load main script (romFs preferred)
 		#ifndef FORCE_SD
-		FILE* script = fopen("romfs:/index.lua","r");
+		FILE* script = fopen("romfs:/SMMCOM.lua","r");
 		if (script == NULL){
 		#endif
 			FS_Path filePath=fsMakePath(PATH_ASCII, path);
@@ -177,7 +177,7 @@ int main(int argc, char **argv)
 		if (buffer != NULL){
 			errMsg = runScript((const char*)buffer, true);
 			free(buffer);
-		}else errMsg = "index.lua file not found.";
+		}else errMsg = "SMMCOM.lua file not found.";
 		
 		// Force LCDs power on
 		if ((!isTopLCDOn) || (!isBottomLCDOn)){
@@ -256,6 +256,7 @@ int main(int argc, char **argv)
 	hbExit();
 	acExit();
 	httpcExit();
+	sslcExit();
 	cfguExit();
 	gfxExit();
 	aptExit();
