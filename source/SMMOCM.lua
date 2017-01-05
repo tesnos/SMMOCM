@@ -41,6 +41,47 @@ fileselecttopimg = Graphics.loadImage(appdir .. "assets/fileselecttop.png")
 --Create a conditions table to check against for special UI elements that have two states
 conditions = {}
 
+--Find out what region of the game the user has
+cartid = System.getGWRomID()
+cartid = string.sub(cartid, #cartid - 3, #cartid)
+cartinserted = nil
+if cartid == "AJHJ" then
+	extdata_arc = 6659
+	cartinserted = true
+end
+if cartid == "AJHP" then
+	extdata_arc = 6661
+	cartinserted = true
+end
+if cartid == "AJHE" then
+	extdata_arc = 6660
+	cartinserted = true
+end
+if not cartinserted then
+	cialist = System.listCIA()
+	us, eu, jp = nil, nil, nil
+	for k, v in pairs(cialist) do
+		if v.unique_id == tonumber("0001A0300", 16) then
+			jp = true
+		end
+		if v.unique_id == tonumber("0001A0400", 16) then
+			us = true
+		end
+		if v.unique_id == tonumber("0001A0500", 16) then
+			eu = true
+		end
+	end
+	if jp then
+		extdata_arc = 6659
+	end
+	if eu then
+		extdata_arc = 6661
+	end
+	if us then
+		extdata_arc = 6660
+	end
+end
+
 --import the json module
 local json = require("imports/json")
 
@@ -266,7 +307,7 @@ function file_select(extdata, toptext)
 	selecting = true
 	fileselectnum = 1
 	if extdata then
-		files = System.listExtdataDir("/", 6660)
+		files = System.listExtdataDir("/", extdata_arc)
 	end
 	if not extdata then
 		files = System.listDirectory("/SMMOCM/")
@@ -336,7 +377,7 @@ end
 --Checking for config file, this is what happens if it doesn't exist
 if System.doesFileExist("/SMMOCM/config.txt") == false then
 	--getting a course file so we can extract the LockoutID
-	lockidfile = io.open("/course000", FREAD, 6660)
+	lockidfile = io.open("/course000", FREAD, extdata_arc)
 	--creating the config file
 	configfile = io.open("/SMMOCM/config.txt", FCREATE)
 	--I know I could have used 2 variables, but I used one for some reason
@@ -491,10 +532,10 @@ function launchgame()
 	cialist = System.listCIA()
 	for k, v in pairs(cialist) do
 		if v.unique_id == tonumber("0001A0300", 16) then
-			System.launchCIA(tonumber("0001A0500", 16), SDMC)
+			System.launchCIA(tonumber("0001A0300", 16), SDMC)
 		end
 		if v.unique_id == tonumber("0001A0400", 16) then
-			System.launchCIA(tonumber("0001A0500", 16), SDMC)
+			System.launchCIA(tonumber("0001A0400", 16), SDMC)
 		end
 		if v.unique_id == tonumber("0001A0500", 16) then
 			System.launchCIA(tonumber("0001A0500", 16), SDMC)
@@ -582,7 +623,7 @@ while true do
 	
 	if menu == 2 then
 		update()
-		uploadcoursefile = io.open(uploadcoursepath, FREAD, 6660)
+		uploadcoursefile = io.open(uploadcoursepath, FREAD, extdata_arc)
 		leveldata = io.read(uploadcoursefile, 0, 274460)
 		io.close(uploadcoursefile, true)
 		table.insert(conditions, "read")
@@ -765,7 +806,7 @@ while true do
 		table.insert(conditions, "injected")
 		update()
 		--opening the course file to inject the new course into
-		downloadcoursefile = io.open(downloadcoursepath, FWRITE, 6660)
+		downloadcoursefile = io.open(downloadcoursepath, FWRITE, extdata_arc)
 		--writing the new course data
 		io.write(downloadcoursefile, 0, newleveldata, #newleveldata)
 		--cleaning up and moving to the success screen
