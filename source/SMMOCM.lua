@@ -196,10 +196,10 @@ end
 function pre_update()
 	--Gotta keep those screens fresh!
 	Screen.refresh()
-	
+
 	--Reading user input
 	input = Controls.read()
-	
+
 	--Top screen graphics
 	Graphics.initBlend(TOP_SCREEN)
 	drawtopbg()
@@ -214,12 +214,12 @@ end
 function post_update()
 	--flushing all changes to the screen
 	Screen.flip()
-	
+
 	--decreasing the controldelay so you can input stuff again
 	if controldelay > 0 then
 		controldelay = controldelay - 1
 	end
-	
+
 	--Waiting until the screen is ready
 	Screen.waitVblankStart()
 end
@@ -236,9 +236,9 @@ function update_console(message, console)
 	Screen.clear(BOTTOM_SCREEN)
 	Screen.clear(TOP_SCREEN)
 	if message then
-		Console.append(console, message)
+		update_console(console, message)
 	else
-		Console.append(console, "nil")
+		update_console(console, "nil")
 	end
 	Console.show(tconsole)
 	Console.show(bconsole)
@@ -315,12 +315,12 @@ function file_select(extdata, toptext)
 	fileslen = tablelength(files)
 	while selecting do
 		pre_update()
-		
+
 		curfile = files[fileselectnum]
-		
+
 		Screen.debugPrint(75, 110, curfile.name, black, BOTTOM_SCREEN)
 		Screen.debugPrint(90, 100, toptext, black, TOP_SCREEN)
-		
+
 		input = Controls.read()
 		if (Controls.check(input,KEY_A)) and controldelay == 0 then
 			selecting = false
@@ -332,27 +332,27 @@ function file_select(extdata, toptext)
 				resultfile = "/SMMOCM/" .. curfile.name
 			end
 		end
-		
+
 		if (Controls.check(input,KEY_DUP)) and controldelay == 0 and fileselectnum < fileslen then
 			fileselectnum = fileselectnum + 1
 			controldelay = 15
 		end
-		
+
 		if (Controls.check(input,KEY_DDOWN)) and controldelay == 0 and fileselectnum > 1 then
 			fileselectnum = fileselectnum - 1
 			controldelay = 15
 		end
-		
+
 		if (Controls.check(input,KEY_DDOWN)) and controldelay == 0 and fileselectnum == 1 then
 			fileselectnum = fileslen
 			controldelay = 15
 		end
-		
+
 		if (Controls.check(input,KEY_DUP)) and controldelay == 0 and fileselectnum == fileslen then
 			fileselectnum = 1
 			controldelay = 15
 		end
-		
+
 		post_update()
 	end
 	menu = oldmenu
@@ -488,7 +488,7 @@ end
 --It failed.  If you want to get this to work, it's on Rosettacode,
 --but I couldn't get their version to work properly so I had to rewrite-ish it
 --I probably made a stupid mistake somewhere and it will work easily if someone
---else tries to implement it 
+--else tries to implement it
 
 function compress(input)
 	compoutput = {}
@@ -515,11 +515,11 @@ function compress(input)
             w = c
 		end
 	end
-	
+
 	if w then
 		table.insert(compoutput, dict[w])
 	end
-	
+
 	return compoutput
 end
 
@@ -553,9 +553,9 @@ while true do
 	--7/8/9/10, Download:11, Download(part 2):12, Download(success):13
 	--There are also "menu-ish"s that aren't technically menus but they are. They occupy the negative menu IDs
 	--Configuration file checking/generation:-1, file_select:-2, keyInput:-3
-	
+
 	pre_update()
-	
+
 	if menu == 0 then
 		--Main menu gfx
 		if (Controls.check(input,KEY_A)) and controldelay == 0 then
@@ -584,7 +584,7 @@ while true do
 			System.exit()
 		end
 	end
-	
+
 	if menu == 1 then
 		if (Controls.check(input,KEY_A)) and controldelay == 0 then
 			Console.clear(tconsole)
@@ -620,7 +620,7 @@ while true do
 			laf()
 		end
 	end
-	
+
 	if menu == 2 then
 		update()
 		uploadcoursefile = io.open(uploadcoursepath, FREAD, extdata_arc)
@@ -643,7 +643,7 @@ while true do
 		laf()
 		conditions = {}
 	end
-	
+
 	if menu == 3 then
 		update()
 		emailcounter = 1
@@ -692,7 +692,7 @@ while true do
 		end
 		laf()
 	end
-	
+
 	if menu == 4 then
 		Screen.debugPrint(60, 155, uploadcoursename .. idpartrandom, black, BOTTOM_SCREEN)
 		if (Controls.check(input,KEY_A)) and controldelay == 0 then
@@ -710,7 +710,7 @@ while true do
 			laf()
 		end
 	end
-	
+
 	if menu == 5 then
 		if (Controls.check(input,KEY_A)) and controldelay == 0 then
 			menu = 0
@@ -726,17 +726,17 @@ while true do
 			laf()
 		end
 	end
-	
+
 	if menu == 6 then
-		Console.append(bconsole, "This feature is not yet ready!")
-		Console.append(bconsole, "\nPress X to return")
+		update_console(bconsole, "This feature is not yet ready!")
+		update_console(bconsole, "\nPress X to return")
 		if (Controls.check(input,KEY_X)) and controldelay == 0 then
 			menu = 0
 			controldelay = 15
 		end
 		Console.show(bconsole)
 	end
-	
+
 	if menu == 11 then
 		if (Controls.check(input,KEY_X)) and controldelay == 0 then
 			menu = 0
@@ -766,7 +766,7 @@ while true do
 			laf()
 		end
 	end
-	
+
 	if menu == 12 then
 		update()
 		--This is downloading a course. Probably the most documented code in the file
@@ -786,7 +786,7 @@ while true do
 		end
 		laf()
 	end
-	
+
 	if menu == 13 then
 		update()
 		--open the required files
@@ -815,7 +815,7 @@ while true do
 		laf()
 		conditions = {}
 	end
-	
+
 	if menu == 14 then
 		if (Controls.check(input,KEY_A)) and controldelay == 0 then
 			--cleaning up
@@ -833,7 +833,7 @@ while true do
 			laf()
 		end
 	end
-	
+
 	if menu == 15 then
 		--When a course has been successfully downloaded this screen appears
 		if (Controls.check(input,KEY_A)) and controldelay == 0 then
@@ -852,6 +852,6 @@ while true do
 			laf()
 		end
 	end
-	
+
 	post_update()
 end
